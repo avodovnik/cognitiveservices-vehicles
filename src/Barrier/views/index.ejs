@@ -1,1 +1,58 @@
-<p>Hello World!</p>
+<html>
+
+<head>
+    <title>Barrier App</title>
+    <link rel="stylesheet" type="text/css" href="/style/main.css" />
+</head>
+
+<body>
+    <header>
+        <h1>Barrier App</h1>
+    </header>
+    <div class="content">
+        <video id="video" height="480" width="800" autoplay></video>
+        <canvas id="canvas" height="480" width="800"> </canvas>
+        <script type="text/javascript">
+            const constraints = {
+                audio: false,
+                video: {
+                    mandatory: {
+                        maxHeight: 480,
+                        maxWidth: 800,
+                        minHeight: 480,
+                        minWidth: 800
+                    }
+                }
+            };
+
+            const videoElement = document.getElementById('video');
+
+            navigator.getUserMedia = navigator.webkitGetUserMedia;
+            navigator.getUserMedia(
+                constraints,
+                stream => videoElement.src = window.URL.createObjectURL(stream),
+                error => console.error(error)
+            );
+
+            var canvasElement = document.getElementById("canvas");
+            var canvas = canvasElement.getContext("2d");
+
+            function tick() {
+                if (video.readyState === videoElement.HAVE_ENOUGH_DATA) {
+                    canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                    var imageData = canvas.getImageData(0, 0, video.width, video.height);
+                    var code = jsQR(imageData.data, imageData.width, imageData.height);
+                    if (code) {
+                        console.log("CODE FOUND:" + code.data);
+                    }
+                }
+                requestAnimationFrame(tick);
+            }
+
+            requestAnimationFrame(tick);
+        </script>
+    </div>
+</body>
+<script type="text/javascript" src="/scripts/jsQR.js"></script>
+
+</html>
