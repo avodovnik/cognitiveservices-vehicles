@@ -14,10 +14,11 @@
         <video id="video" height="480" width="800" autoplay></video>
         <canvas id="canvas" height="480" width="800"> </canvas>
         <script type="text/javascript">
-            const uriBase = "https://uksouth.api.cognitive.microsoft.com/face/v1.0/";
+            var subscriptionKey = "<%= config.face.key %>";
+            const uriBase = "https://uksouth.api.cognitive.microsoft.com/face/v1.0/"; //face detection api from cognitive service
             const uriLocations = {
-                detect : uriBase + "detect",
-                verify : uriBase + "verify"
+                detect: uriBase + "detect", // adds detection at the end of the URL that links to api 
+                verify: uriBase + "verify" //adds verifiy at the end of URL that links to the api
             };
 
             const constraints = {
@@ -47,30 +48,55 @@
             function tick() {
                 if (video.readyState === videoElement.HAVE_ENOUGH_DATA) {
                     canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                    var imageData = canvas.getImageData(0, 0, video.width, video.height);
+                    var imageData = canvas.getImageData(0, 0, video.width, video.height); //grabs the image square with the qr code
 
                     // this is where we start searching for a QR code
                     var code = jsQR(imageData.data, imageData.width, imageData.height);
 
                     if (code && code.data) {
-                        console.log("CODE FOUND:" + code.data);
-                        doFaceRecognition(code.data);
-                        return;
-                    }
+                        $.ajax({ //a synchronised java + xml get and post
+                            url: uriLocations.detect,
+                            data: JSON.stringify({ url: code.data }),
+                            type: "POST",
+                            contentType: "application/json",
+                            success: function (rx) {
+                                console.log(rx);
+                                if (rx && rx.length == 1) //if a face is detected in camera and the length is 1 (one face) then stop the detection and verify
+                                    (doFaceRecognition(rx[0].faceId))
+                                else //if the conditions arent true then recapture screen looking for face
+                                    (requestAnimationFrame(tick));
 
+                            },
+                            beforeSend: function (xhr) {
+                                // xhr.setRequestHeader("Content-Type", "application/octet-stream");
+                                xhr.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+                            },
+                            error: function (x, e) {
+                                console.log(x.responseText);
+                                requestAnimationFrame(tick);
+
+                            }
+                        });
+                        // console.log("CODE FOUND:" + code.data);
+                        //  doFaceRecognition(code.data);
+                        // return; 
+                    } else {
+                        requestAnimationFrame(tick);
+                    }
+                } else {
+                    requestAnimationFrame(tick);
                 }
-                requestAnimationFrame(tick);
             }
 
             var faceRecognition, faceWatchdog;
-            function doFaceRecognition() {
+            function doFaceRecognition(originalFace) {
                 console.log("Starting facial recognition.");
                 if (video.readyState === videoElement.HAVE_ENOUGH_DATA) {
                     canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
                     var imageData = canvas.getImageData(0, 0, video.width, video.height);
 
                     canvasElement.toBlob(function (b) {
-                        processImage(b);
+                        processImage(b, originalFace);
                     });
                 }
 
@@ -87,9 +113,9 @@
 
             requestAnimationFrame(tick);
 
-            function processImage(data) {
+            function processImage(data, originalFace) {
                 // Replace <Subscription Key> with your valid subscription key.
-                var subscriptionKey = "<%= config.face.key %>";
+
 
                 var fileReader = new FileReader();
                 fileReader.onload = function (event) {
@@ -119,8 +145,8 @@
 
                                 var verifyUri = uriLocations.verify;
                                 var verifyData = {
-                                    faceid1: response[0].faceId,
-                                    faceid2: '2af394fb-08c7-48db-b532-40ed8da2086f'
+                                    faceid1: response[0].faceId, // needs to change to the code in the QR code
+                                    faceid2: originalFace //image from the camera
                                 };
 
                                 $.ajax({
@@ -136,7 +162,7 @@
                                         // xhr.setRequestHeader("Content-Type", "application/octet-stream");
                                         xhr.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
                                     },
-                                    error: function(x,e) {
+                                    error: function (x, e) {
                                         console.log(x.responseText);
                                     }
                                 });
