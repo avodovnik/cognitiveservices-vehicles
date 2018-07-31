@@ -14,6 +14,12 @@
         <video id="video" height="480" width="800" autoplay></video>
         <canvas id="canvas" height="480" width="800"> </canvas>
         <script type="text/javascript">
+            const uriBase = "https://uksouth.api.cognitive.microsoft.com/face/v1.0/";
+            const uriLocations = {
+                detect : uriBase + "detect",
+                verify : uriBase + "verify"
+            };
+
             const constraints = {
                 audio: false,
                 video: {
@@ -87,8 +93,6 @@
 
                 var fileReader = new FileReader();
                 fileReader.onload = function (event) {
-                    var uriBase =
-                        "https://uksouth.api.cognitive.microsoft.com/face/v1.0/detect";
 
                     // Request parameters.
                     var params = {
@@ -100,7 +104,7 @@
                     };
 
                     $.ajax({
-                        url: uriBase + "?" + $.param(params),
+                        url: uriLocations.detect,
                         beforeSend: function (xhr) {
                             xhr.setRequestHeader("Content-Type", "application/octet-stream");
                             xhr.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
@@ -113,7 +117,7 @@
                             if (response && response.length == 1) {
                                 console.log(response[0].faceId);
 
-                                var verifyUri = "https://uksouth.api.cognitive.microsoft.com/face/v1.0/verify";
+                                var verifyUri = uriLocations.verify;
                                 var verifyData = {
                                     faceid1: response[0].faceId,
                                     faceid2: '2af394fb-08c7-48db-b532-40ed8da2086f'
@@ -126,6 +130,7 @@
                                     contentType: "application/json",
                                     success: function (rx) {
                                         console.log(rx);
+                                        killFaceRecognition();
                                     },
                                     beforeSend: function (xhr) {
                                         // xhr.setRequestHeader("Content-Type", "application/octet-stream");
@@ -135,15 +140,12 @@
                                         console.log(x.responseText);
                                     }
                                 });
-
-                                killFaceRecognition();
                             }
                         },
                         error: function (xhr, status) {
                             console.log(xhr.responseText);
                         }
                     });
-
                 };
                 fileReader.readAsArrayBuffer(data);
             };
