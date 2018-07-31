@@ -3,6 +3,7 @@
 <head>
     <title>Barrier App</title>
     <link rel="stylesheet" type="text/css" href="/style/main.css" />
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js"></script>
 </head>
 
 <body>
@@ -24,8 +25,6 @@
                     }
                 }
             };
-
-            alert('<%= config.face.key %>');
 
             const videoElement = document.getElementById('video');
 
@@ -64,6 +63,9 @@
                     canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
                     var imageData = canvas.getImageData(0, 0, video.width, video.height);
 
+                    canvasElement.toBlob(function (b) {
+                        processImage(b);
+                    });
                 }
 
                 faceRecognition = window.setTimeout(doFaceRecognition, 3000);
@@ -79,65 +81,71 @@
 
             requestAnimationFrame(tick);
 
-            function processImage() {
+            function processImage(data) {
                 // Replace <Subscription Key> with your valid subscription key.
-                var subscriptionKey = "<Subscription Key>";
+                var subscriptionKey = "<%= config.face.key %>";
 
-                // NOTE: You must use the same region in your REST call as you used to
-                // obtain your subscription keys. For example, if you obtained your
-                // subscription keys from westus, replace "westcentralus" in the URL
-                // below with "westus".
-                //
-                // Free trial subscription keys are generated in the westcentralus region.
-                // If you use a free trial subscription key, you shouldn't need to change 
-                // this region.
-                var uriBase =
-                    "https://westcentralus.api.cognitive.microsoft.com/face/v1.0/detect";
+                var fileReader = new FileReader();
+                fileReader.onload = function (event) {
+                    var uriBase =
+                        "https://uksouth.api.cognitive.microsoft.com/face/v1.0/detect";
 
-                // Request parameters.
-                var params = {
-                    "returnFaceId": "true",
-                    "returnFaceLandmarks": "false",
-                    "returnFaceAttributes":
-                        "age,gender,headPose,smile,facialHair,glasses,emotion," +
-                        "hair,makeup,occlusion,accessories,blur,exposure,noise"
-                };
+                    // Request parameters.
+                    var params = {
+                        "returnFaceId": "true",
+                        "returnFaceLandmarks": "false",
+                        "returnFaceAttributes":
+                            "age,gender,headPose,smile,facialHair,glasses,emotion," +
+                            "hair,makeup,occlusion,accessories,blur,exposure,noise"
+                    };
 
-                // Display the image.
-                var sourceImageUrl = document.getElementById("inputImage").value;
-                document.querySelector("#sourceImage").src = sourceImageUrl;
+                    $.ajax({
+                        url: uriBase + "?" + $.param(params),
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Content-Type", "application/octet-stream");
+                            xhr.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+                        },
+                        type: "POST",
+                        data: event.target.result,
+                        processData: false,
+                        contentType: false,
+                        success: function (response) {
+                            if (response && response.length == 1) {
+                                console.log(response[0].faceId);
 
-                // Perform the REST API call.
-                $.ajax({
-                    url: uriBase + "?" + $.param(params),
+                                var verifyUri = "https://uksouth.api.cognitive.microsoft.com/face/v1.0/verify";
+                                var verifyData = {
+                                    faceid1: response[0].faceId,
+                                    faceid2: '2af394fb-08c7-48db-b532-40ed8da2086f'
+                                };
 
-                    // Request headers.
-                    beforeSend: function (xhrObj) {
-                        xhrObj.setRequestHeader("Content-Type", "application/json");
-                        xhrObj.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
-                    },
+                                $.ajax({
+                                    url: verifyUri,
+                                    data: JSON.stringify(verifyData),
+                                    type: "POST",
+                                    contentType: "application/json",
+                                    success: function (rx) {
+                                        console.log(rx);
+                                    },
+                                    beforeSend: function (xhr) {
+                                        // xhr.setRequestHeader("Content-Type", "application/octet-stream");
+                                        xhr.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+                                    },
+                                    error: function(x,e) {
+                                        console.log(x.responseText);
+                                    }
+                                });
 
-                    type: "POST",
-
-                    // Request body.
-                    data: '{"url": ' + '"' + sourceImageUrl + '"}',
-                })
-
-                    .done(function (data) {
-                        // Show formatted JSON on webpage.
-                        $("#responseTextArea").val(JSON.stringify(data, null, 2));
-                    })
-
-                    .fail(function (jqXHR, textStatus, errorThrown) {
-                        // Display error message.
-                        var errorString = (errorThrown === "") ?
-                            "Error. " : errorThrown + " (" + jqXHR.status + "): ";
-                        errorString += (jqXHR.responseText === "") ?
-                            "" : (jQuery.parseJSON(jqXHR.responseText).message) ?
-                                jQuery.parseJSON(jqXHR.responseText).message :
-                                jQuery.parseJSON(jqXHR.responseText).error.message;
-                        alert(errorString);
+                                killFaceRecognition();
+                            }
+                        },
+                        error: function (xhr, status) {
+                            console.log(xhr.responseText);
+                        }
                     });
+
+                };
+                fileReader.readAsArrayBuffer(data);
             };
         </script>
     </div>
