@@ -24,9 +24,11 @@
             //TODO: populate lane
             var lane = 3;
 
-            //get recent requests to enter
-            function getRequest() {
-                    
+            //process recent requests to enter
+            function processRequest() {
+
+                    //populate above variables from backend (app.js endpoints)
+
                     if(allowed == true){
                         document.getElementById("requestResult").textContent = "Allow"
                         document.getElementById("requestResult").style.color = "green"
@@ -38,7 +40,7 @@
             };
 
             //refresh page every few seconds?
-            getRequest();
+            processRequest();
 
         </script>
     </div>
