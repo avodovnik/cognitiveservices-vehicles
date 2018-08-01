@@ -1,0 +1,33 @@
+body {
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    line-height: 140%;
+    color: #444;
+    background: #f9f9f9;
+    margin: 0px;
+}
+
+header {
+    background: #222;
+    color: white;
+    font-size: 11px;
+    font-weight: normal;
+    padding: 10px 20px;
+    display:block;
+}
+
+header h1 {
+    font-size: 2em;
+    font-weight: normal;
+    /* margin: 5px 20px */
+}
+
+.content { 
+    padding: 20px;
+    text-align: center;
+}
+
+.content video { display: none; }
+.content canvas {
+    border-radius: 15px;
+    border: 1px solid #666;
+}
