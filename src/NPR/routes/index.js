@@ -6,8 +6,6 @@ var request = require('request');
 var router = express.Router();
 router.use(fileUpload());
 
-//TODO: send NPRFunction result to storage queue
-
 /***************************************************************************
     Home page
 ***************************************************************************/
@@ -25,7 +23,6 @@ router.post("/upload", function (req, res) {
     return res.status(400).send('No files were uploaded.');
   }
 
-
   request({
     url: config.function.url + "?lane=" + req.body.laneNumber,
     method: 'POST',
@@ -38,6 +35,8 @@ router.post("/upload", function (req, res) {
     } else {
       var funcResult = JSON.parse(response.body);
       console.log('Response: ', funcResult.PlateContent);
+
+      // TODO: this is where we send the message to the storage queue
 
       return res.redirect("/?success=true");
     }
