@@ -4,6 +4,14 @@ const fileUpload = require('express-fileupload');
 var request = require('request');
 
 var router = express.Router();
+var azure = require('azure-storage');
+var queueSvc = azure.createQueueService(process.env.AZURE_STORAGE_ACCOUNT_NAME, process.env.AZURE_STORAGE_ACCOUNT_KEY);
+
+const QueueMessageEncoder = azure.QueueMessageEncoder;
+console.log(queueSvc.messageEncoder);
+queueSvc.messageEncoder = new QueueMessageEncoder.TextBase64QueueMessageEncoder();
+
+
 router.use(fileUpload());
 
 /***************************************************************************
@@ -36,7 +44,23 @@ router.post("/upload", function (req, res) {
       var funcResult = JSON.parse(response.body);
       console.log('Response: ', funcResult.PlateContent);
 
-      // TODO: this is where we send the message to the storage queue
+      //Send response content 
+      var lane = funcResult.Lane; 
+      var platecontent = funcResult.PlateContent;
+      
+      //create queue message
+      var message = {
+          Lane: lane,
+          PlateContent: platecontent,
+          Time: new Date(),
+      };
+
+      queueSvc.createMessage(process.env.AZURE_STORAGE_QUEUE_NAME, JSON.stringify(message), function (error) {
+          console.log(error)
+          if (!error) {
+              console.log("success")
+          }
+      });
 
       return res.redirect("/?success=true");
     }
