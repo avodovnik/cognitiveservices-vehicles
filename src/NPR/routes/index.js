@@ -12,12 +12,9 @@ router.use(fileUpload());
     Home page
 ***************************************************************************/
 router.get('/', function (req, res, next) {
-
-  var app;
-
-  app = req.app;
   res.render('index', {
-    config: config
+    config: config,
+    success: req.query.success
   });
 });
 
@@ -37,9 +34,12 @@ router.post("/upload", function (req, res) {
   }, (error, response, body) => {
     if (error) {
       console.log('Error sending message: ', error)
+      return res.redirect("/?success=false");
     } else {
       var funcResult = JSON.parse(response.body);
       console.log('Response: ', funcResult.PlateContent);
+
+      return res.redirect("/?success=true");
     }
   });
 
