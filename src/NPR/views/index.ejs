@@ -16,37 +16,38 @@
 
                 //TODO: send upload to NPRFunction
                 //Takes lane as param
-            function npOCR(lane){
-    
-                var data = fs.readFileSync('../uploads/image.jpg');
-    
-                $.ajax({
-                type: 'POST',
-                data: JSON.stringify(data),
-                    contentType: 'application/octet-stream',
-                            url: 'https://modnpr.azurewebsites.net/api/NPRFunction?lane='+lane,						
-                            success: function(result) {
-                                console.log('success');
-                                console.log(JSON.stringify(result));
-                            }
-                });
-    
-            }
-    
-            
+            // function npOCR(lane){
+
+            //     // var data = fs.readFileSync('../uploads/image.jpg');
+
+            //     $.ajax({
+            //     type: 'POST',
+            //     data: JSON.stringify(data),
+            //         contentType: 'application/octet-stream',
+            //                 url: 'https://modnpr.azurewebsites.net/api/NPRFunction?lane='+lane,						
+            //                 success: function(result) {
+            //                     console.log('success');
+            //                     console.log(JSON.stringify(result));
+            //                 }
+            //     });
+
+            // }
+
+
         </script>
-        
+
         <!--Call OCR function for lane 3 by default-->
         <p>Upload an example vehicle image and input your lane number</p>
 
-        <form method="post" enctype="multipart/form-data" action="/upload" onsubmit="npOCR(3)">
-            <input type="file" name="file">
+        <form method="POST" action="/upload" encType="multipart/form-data">
+            <input type="file" name="plate"/>
             <label for="number">Lane:</label>
-            <input id="lanenumber" type="number" name="Lane">
+            <input id="laneNumber" type="number" name="laneNumber">
             <input type="submit" value="Submit">
-        </form>        
+        </form>
 
 
     </div>
 </body>
+
 </html>
