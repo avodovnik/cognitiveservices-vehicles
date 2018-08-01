@@ -12,6 +12,16 @@
     </header>
     <div class="content">
         <video id="video" height="480" width="800" autoplay></video>
+        
+        <!--
+        <image id="resultImage" height ="480" width ="800"> </image>
+        -->
+        
+        <form method="post" enctype="multipart/form-data" action="/upload">
+            <input type="file" name="file">
+            <input type="submit" value="Submit">
+        </form>        
+
         <canvas id="canvas" height="480" width="800"> </canvas>
     </div>
 </body>
