@@ -21,117 +21,128 @@ namespace NumPlateFunction
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
         {
 
-            log.Info(Environment.GetEnvironmentVariable("NAME"));
-            log.Info("C# HTTP trigger function processed a request.");
 
-            ResponseInformation ri = new ResponseInformation();
 
-            //assign a guid to this request for tracking purposes
-            ri.RequestGuid = Guid.NewGuid();
-
-            //key-value parameter pairs in req
-            IEnumerable<KeyValuePair<string, string>> parameters = req.GetQueryNameValuePairs();
-
-            //WARNING: Expecting lane num as first value passed in
-            var lane = parameters.First().Value;
-
-            ri.Lane = Convert.ToInt32(lane); //from input string
-
-            byte[] imagebytes = new byte[] { };
-
-            using (var streamReader = new MemoryStream())
+            try
             {
-                await req.Content.CopyToAsync(streamReader);
-                imagebytes = streamReader.ToArray();
-            }
-            
-            //Write to result file somewhere to check cropping
-            //File.WriteAllBytes("C:/Users/me/myfiles/result.jpg", imagebytes);
+                log.Info(Environment.GetEnvironmentVariable("NAME"));
+                log.Info("C# HTTP trigger function processed a request.");
 
-            var responseString = await DetectPlate(imagebytes);
+                ResponseInformation ri = new ResponseInformation();
 
-            dynamic parsed = JObject.Parse(responseString);
+                //assign a guid to this request for tracking purposes
+                ri.RequestGuid = Guid.NewGuid();
 
-            var highestprob = 0.0;
+                //key-value parameter pairs in req
+                IEnumerable<KeyValuePair<string, string>> parameters = req.GetQueryNameValuePairs();
 
-            JArray predictions = parsed.predictions;
+                //WARNING: Expecting lane num as first value passed in
+                var lane = parameters.First().Value;
 
-            foreach (var prediction in predictions)
-            {
-                var prob = prediction.Value<double>("probability");
-                if (prob > highestprob)
+                ri.Lane = Convert.ToInt32(lane); //from input string
+
+                byte[] imagebytes = new byte[] { };
+
+                using (var streamReader = new MemoryStream())
                 {
-                    highestprob = prob;
+                    await req.Content.CopyToAsync(streamReader);
+                    imagebytes = streamReader.ToArray();
                 }
-            }
 
-            //left, top, width, height
-            double left = 0.0;
-            double top = 0.0;
-            double width = 0.0;
-            double height = 0.0;
+                //Write to result file somewhere to check topping
+                //File.WriteAllBytes("C:/Users/me/myfiles/result.jpg", imagebytes);
 
-            foreach (var prediction in predictions)
-            {
-                var prob = prediction.Value<double>("probability");
-                if (prob == highestprob)
+                var responseString = await DetectPlate(imagebytes);
+
+                dynamic parsed = JObject.Parse(responseString);
+
+                var highestprob = 0.0;
+
+                JArray predictions = parsed.predictions;
+
+                foreach (var prediction in predictions)
                 {
-                    var boundingbox = prediction.Value<JObject>("boundingBox");
-                    left = (double)boundingbox["left"];
-                    top = (double)boundingbox["top"];
-                    width = (double)boundingbox["width"];
-                    height = (double)boundingbox["height"];
+                    var prob = prediction.Value<double>("probability");
+                    if (prob > highestprob)
+                    {
+                        highestprob = prob;
+                    }
                 }
-            }
 
-            //convert to <Image> object for original dims
-            MemoryStream ms = new MemoryStream(imagebytes);
-            Image imageobj = Image.FromStream(ms);
+                //left, top, width, height
+                double left = 0.0;
+                double top = 0.0;
+                double width = 0.0;
+                double height = 0.0;
 
-            //original dims (w, h)
-            var origWidth = imageobj.Width;
-            var origHeight = imageobj.Height;
+                foreach (var prediction in predictions)
+                {
+                    var prob = prediction.Value<double>("probability");
+                    if (prob == highestprob)
+                    {
+                        var boundingbox = prediction.Value<JObject>("boundingBox");
+                        left = (double)boundingbox["left"];
+                        top = (double)boundingbox["top"];
+                        width = (double)boundingbox["width"];
+                        height = (double)boundingbox["height"];
+                    }
+                }
 
-            //convert bounding values to int for cropper and scale
-            int intleft = Convert.ToInt32(left * origWidth);
-            int inttop = Convert.ToInt32(top * origHeight);
-            int intwidth = Convert.ToInt32(width * origWidth);
-            int intheight = Convert.ToInt32(height * origHeight);
+                //convert to <Image> object for original dims
+                MemoryStream ms = new MemoryStream(imagebytes);
+                Image imageobj = Image.FromStream(ms);
 
-            //image deduced from request req in cropping function
-            var croppedimagebytes = await Crop(req, intleft, inttop, intwidth, intheight);
+                //original dims (w, h)
+                var origWidth = imageobj.Width;
+                var origHeight = imageobj.Height;
 
-            //OCR
-            //TODO: breaks when given image is too small (set min)/scale accordingly
-            responseString = await ReadPlate(croppedimagebytes);
+                //convert bounding values to int for cropper and scale
+                int intleft = Convert.ToInt32(left * origWidth);
+                int inttop = Convert.ToInt32(top * origHeight);
+                int intwidth = Convert.ToInt32(width * origWidth);
+                int intheight = Convert.ToInt32(height * origHeight);
 
-            //TODO: convert all JSON handling to take advantage of Response classes as below https://json2csharp.com
-            //beware incorrect variable types
-            var parsedOCRresponse = JsonConvert.DeserializeObject<NumPlateVerifierFinal.OCRResponse>(responseString);
+                //image deduced from request req in cropping function
+                var croppedimagebytes = await Crop(req, intleft, inttop, intwidth, intheight);
 
-            string ocrtext = ""; //concatenate all recognized text to this variable for return to ri
+                //OCR
+                //TODO: breaks when given image is too small (set min)/scale accordingly
+                responseString = await ReadPlate(croppedimagebytes);
 
-            foreach (var region in parsedOCRresponse.regions)
-            {
-                foreach (var line in region.lines) {
+                //TODO: convert all JSON handling to take advantage of Response classes as below https://json2csharp.com
+                //beware incorrect variable types
+                var parsedOCRresponse = JsonConvert.DeserializeObject<NumPlateVerifierFinal.OCRResponse>(responseString);
 
-                    foreach (var word in line.words)
+                string ocrtext = ""; //concatenate all recognized text to this variable for return to ri
+
+                foreach (var region in parsedOCRresponse.regions)
+                {
+                    foreach (var line in region.lines)
                     {
 
-                        ocrtext += word.text;
+                        foreach (var word in line.words)
+                        {
+
+                            ocrtext += word.text;
+
+                        }
+
 
                     }
-
-
                 }
+
+                //TODO: handle case that ocr returns something in plate's region box (excess characters returned)
+                ri.PlateContent = ocrtext;
+
+                return imagebytes == null
+                    ? req.CreateResponse(HttpStatusCode.BadRequest, "Please pass an array of bytes in your request body")
+                    : req.CreateResponse(HttpStatusCode.OK, ri);
             }
+            catch (Exception ex)
+            {
 
-            //TODO: handle case that ocr returns something in plate's region box (excess characters returned)
-            ri.PlateContent = ocrtext;
-
-            return imagebytes == null
-                ? req.CreateResponse(HttpStatusCode.BadRequest, "Please pass an array of bytes in your request body")
-                : req.CreateResponse(HttpStatusCode.OK, ri);
+                return req.CreateResponse(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
         private static async Task<string> DetectPlate(byte[] bytes)
