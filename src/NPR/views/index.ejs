@@ -11,20 +11,42 @@
         <h1>NPR App</h1>
     </header>
     <div class="content">
-        <video id="video" height="480" width="800" autoplay></video>
+
+        <script type="text/javascript">
+
+                //TODO: send upload to NPRFunction
+                //Takes lane as param
+            function npOCR(lane){
+    
+                var data = fs.readFileSync('../uploads/image.jpg');
+    
+                $.ajax({
+                type: 'POST',
+                data: JSON.stringify(data),
+                    contentType: 'application/octet-stream',
+                            url: 'https://modnpr.azurewebsites.net/api/NPRFunction?lane='+lane,						
+                            success: function(result) {
+                                console.log('success');
+                                console.log(JSON.stringify(result));
+                            }
+                });
+    
+            }
+    
+            
+        </script>
         
-        <!--
-        <image id="resultImage" height ="480" width ="800"> </image>
-        -->
-        
-        <form method="post" enctype="multipart/form-data" action="/upload">
+        <!--Call OCR function for lane 3 by default-->
+        <p>Upload an example vehicle image and input your lane number</p>
+
+        <form method="post" enctype="multipart/form-data" action="/upload" onsubmit="npOCR(3)">
             <input type="file" name="file">
+            <label for="number">Lane:</label>
+            <input id="lanenumber" type="number" name="Lane">
             <input type="submit" value="Submit">
         </form>        
 
-        <canvas id="canvas" height="480" width="800"> </canvas>
+
     </div>
 </body>
-<script type="text/javascript" src="/scripts/jsQR.js"></script>
-
 </html>
