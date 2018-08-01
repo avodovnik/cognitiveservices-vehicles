@@ -1,1 +1,46 @@
-Guard App To Come Here.
+<html>
+
+<head>
+    <title>Guard App</title>
+    <link rel="stylesheet" type="text/css" href="/style/main.css" />
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Guard App</h1>
+    </header>
+    <div class="content">
+
+        <h1 id>Status:</h1>
+        <h1 id="requestResult"></h1>
+
+        <script type="text/javascript">
+
+            //TODO: logic to define "allowed"
+            //allowed = has face been verified and does OCR result contain numplatestring?
+            //change these values to see result
+            var allowed = true;
+            //TODO: populate lane
+            var lane = 3;
+
+            //get recent requests to enter
+            function getRequest() {
+                    
+                    if(allowed == true){
+                        document.getElementById("requestResult").textContent = "Allow"
+                        document.getElementById("requestResult").style.color = "green"
+                    } else {
+                        document.getElementById("requestResult").textContent = "Check vehicle in lane " + lane;
+                        document.getElementById("requestResult").style.color = "red"
+                    }
+
+            };
+
+            //refresh page every few seconds?
+            getRequest();
+
+        </script>
+    </div>
+</body>
+</html>
