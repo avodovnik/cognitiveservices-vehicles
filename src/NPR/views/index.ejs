@@ -12,6 +12,17 @@
     </header>
     <div class="content">
 
+            <!--Call OCR function for lane 3 by default-->
+        <p>Upload an example vehicle image and input your lane number</p>
+
+        <form method="post" enctype="multipart/form-data" action="/upload" onsubmit="npOCR(3)">
+                <input type="file" name="file">
+                <label for="number">Lane:</label>
+                <input id="lanenumber" type="number" name="Lane">
+                <input type="submit" value="Submit">
+        </form>        
+        
+
         <script type="text/javascript">
 
                 //TODO: send upload to NPRFunction
