@@ -5,6 +5,9 @@ var express = require('express');
 var path = require('path');
 var http = require('http');
 
+//TODO: connect to azure storage and get entries from queue, process those in same lane, and delete
+var azure = require('azure-storage');
+
 
 var app = express();
 
