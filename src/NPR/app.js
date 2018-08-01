@@ -47,7 +47,7 @@ const handleError = (err, res) => {
       const tempPath = req.file.path;
       const targetPath = path.join(__dirname, "./uploads/image.jpg");
   
-      if (path.extname(req.file.originalname).toLowerCase() === ".jpg") {
+      if (path.extname(req.file.originalname).toLowerCase() === ".jpg" || ".jpeg") {
         fs.rename(tempPath, targetPath, err => {
           if (err) return handleError(err, res);
   
@@ -63,7 +63,7 @@ const handleError = (err, res) => {
           res
             .status(403)
             .contentType("text/plain")
-            .end("Only .jpg files are allowed!");
+            .end("Only .jpg or .jpeg files are allowed!");
         });
       }
     }
