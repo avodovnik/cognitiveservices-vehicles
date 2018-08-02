@@ -100,15 +100,19 @@
                     });
                 }
 
-                faceRecognition = window.setTimeout(doFaceRecognition, 3000);
+                faceRecognition = window.setTimeout(function() { doFaceRecognition(originalFace); }, 3000);
                 faceWatchdog = window.setTimeout(killFaceRecognition, 30000);
             }
 
-            function killFaceRecognition() {
+            function killFaceRecognition(delay) {
                 window.clearTimeout(faceRecognition);
                 window.clearTimeout(faceWatchdog);
 
-                requestAnimationFrame(tick);
+                if(!delay) {
+                    requestAnimationFrame(tick);
+                } else {
+                    window.setTimeout(function() { requestAnimationFrame(tick); }, 10000);
+                }
             }
 
             requestAnimationFrame(tick);
@@ -145,8 +149,8 @@
 
                                 var verifyUri = uriLocations.verify;
                                 var verifyData = {
-                                    faceid1: response[0].faceId, // needs to change to the code in the QR code
-                                    faceid2: originalFace //image from the camera
+                                    faceid1: response[0].faceId, // image from the camera
+                                    faceid2: originalFace // from the QR code
                                 };
 
                                 $.ajax({
@@ -156,10 +160,33 @@
                                     contentType: "application/json",
                                     success: function (rx) {
                                         console.log(rx);
-                                        killFaceRecognition();
+                                        killFaceRecognition(true);
+
+                                        // example response: {isIdentical: false, confidence: 0.08676}
+                                        var verifyDataPayload = {
+                                            faceid1: verifyData.faceId1,
+                                            result: rx.isIdentical,
+                                            confidence: rx.confidence
+                                        };
+
+                                        // TODO: read data, then see
+                                        $.ajax({
+                                            url: '/send',
+                                            data: JSON.stringify(verifyDataPayload),
+                                            type: 'POST',
+                                            contentType: 'application/json',
+                                            success: function(postRx) {
+                                                // check what the status is, then go from there
+                                                console.log(postRx);
+                                            },
+                                            error: function() {
+                                                alert("There has been an error. Please report to the guard.");
+                                            }
+                                        });
+
                                     },
                                     beforeSend: function (xhr) {
-                                        // xhr.setRequestHeader("Content-Type", "application/octet-stream");
+                                        // TODO: this is not safe, but it's a good enough option for now
                                         xhr.setRequestHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
                                     },
                                     error: function (x, e) {

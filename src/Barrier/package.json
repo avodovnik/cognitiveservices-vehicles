@@ -6,10 +6,12 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "azure-storage": "^2.10.0",
     "debug": "3.1.0",
     "dotenv": "6.0.0",
     "ejs": "~2.6.1",
     "express": "~4.16.3",
-    "express-session": "~1.15.6"
+    "express-session": "~1.15.6",
+    "body-parser" : "^1.18.3"
   }
 }
