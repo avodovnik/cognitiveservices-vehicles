@@ -24,25 +24,56 @@
             //TODO: populate lane
             var lane = 3;
 
+            var faceReceived = false;
+            var plateReceived = false;
+
             //process recent requests to enter
             function processRequest() {
 
-                    //populate above variables from backend (app.js endpoints)
+                //populate above variables from backend (app.js endpoints)
 
-                    if(allowed == true){
-                        document.getElementById("requestResult").textContent = "Allow"
-                        document.getElementById("requestResult").style.color = "green"
-                    } else {
-                        document.getElementById("requestResult").textContent = "Check vehicle in lane " + lane;
-                        document.getElementById("requestResult").style.color = "red"
-                    }
+                if (faceReceived === true && plateReceived === true) {
+                    document.getElementById("requestResult").textContent = "Allow"
+                    document.getElementById("requestResult").style.color = "green"
+                } else {
+                    document.getElementById("requestResult").textContent = "Check vehicle in lane " + lane;
+                    document.getElementById("requestResult").style.color = "red"
+                }
 
             };
 
             //refresh page every few seconds?
             processRequest();
 
+            function pollQueue() {
+                $.get('/poll', function (data) {
+                    if (!data) return;
+                    if (data.length == 0) return;
+
+                    // iterate through each message
+                    for (var i = 0; i < data.length; i++) {
+                        var msg = data[i];
+                        console.log(msg);
+                        console.log("Lane: " + msg.Lane);
+                        
+                        if(msg.PlateContent) {
+                            console.log("Plate number:" + msg.PlateContent);
+                            plateReceived = true;
+
+                            processRequest();
+                        }
+
+                        if(msg.IsVerified) {
+                            faceReceived = true;
+                            processRequest();
+                        }
+                    }
+                });
+            }
+
+            var timer = window.setInterval(pollQueue, 1000);
         </script>
     </div>
 </body>
+
 </html>

@@ -33,12 +33,12 @@ router.post('/send', function (req, res, next) {
         Time: new Date(),
     };
 
-    var queueSvc = azure.createQueueService(process.env.AZURE_STORAGE_ACCOUNT_NAME, process.env.AZURE_STORAGE_ACCOUNT_KEY);
+    var queueSvc = azure.createQueueService(config.queue.account, config.queue.accessKey);
 
     const QueueMessageEncoder = azure.QueueMessageEncoder;
     queueSvc.messageEncoder = new QueueMessageEncoder.TextBase64QueueMessageEncoder();
 
-    queueSvc.createMessage(process.env.AZURE_STORAGE_QUEUE_NAME, JSON.stringify(message), function (error) {
+    queueSvc.createMessage(config.queue.queueName, JSON.stringify(message), function (error) {
         console.log(error)
         if (!error) {
             console.log("success");
