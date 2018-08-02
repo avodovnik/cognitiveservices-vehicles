@@ -4,6 +4,14 @@ const fileUpload = require('express-fileupload');
 var request = require('request');
 
 var router = express.Router();
+var azure = require('azure-storage');
+var queueSvc = azure.createQueueService(process.env.AZURE_STORAGE_ACCOUNT_NAME, process.env.AZURE_STORAGE_ACCOUNT_KEY);
+
+const QueueMessageEncoder = azure.QueueMessageEncoder;
+console.log(queueSvc.messageEncoder);
+queueSvc.messageEncoder = new QueueMessageEncoder.TextBase64QueueMessageEncoder();
+
+
 router.use(fileUpload());
 
 /***************************************************************************
@@ -36,12 +44,33 @@ router.post("/upload", function (req, res) {
       var funcResult = JSON.parse(response.body);
       console.log('Response: ', funcResult.PlateContent);
 
+<<<<<<< HEAD
       // TODO: this is where we send the message to the storage queue
     //   {
     //     "Lane": 2,
     //     "PlateContent": "V12LAF",
     //     "RequestGuid": "165ea0ba-3544-4cd3-a0bd-44f13ed405cb"
     // }
+=======
+      //Send response content 
+      var lane = funcResult.Lane; 
+      var platecontent = funcResult.PlateContent;
+      
+      //create queue message
+      var message = {
+          Lane: lane,
+          PlateContent: platecontent,
+          Time: new Date(),
+      };
+
+      queueSvc.createMessage(process.env.AZURE_STORAGE_QUEUE_NAME, JSON.stringify(message), function (error) {
+          console.log(error)
+          if (!error) {
+              console.log("success")
+          }
+      });
+
+>>>>>>> a6991d23c94331460498f16aac0ccb8eecd235f0
       return res.redirect("/?success=true");
     }
   });
