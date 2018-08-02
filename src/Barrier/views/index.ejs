@@ -45,6 +45,8 @@
             var canvasElement = document.getElementById("canvas");
             var canvas = canvasElement.getContext("2d");
 
+            var faceUrl = null;
+
             function tick() {
                 if (video.readyState === videoElement.HAVE_ENOUGH_DATA) {
                     canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
@@ -54,6 +56,8 @@
                     var code = jsQR(imageData.data, imageData.width, imageData.height);
 
                     if (code && code.data) {
+                        faceUrl = code.data;
+
                         $.ajax({ //a synchronised java + xml get and post
                             url: uriLocations.detect,
                             data: JSON.stringify({ url: code.data }),
@@ -166,7 +170,8 @@
                                         var verifyDataPayload = {
                                             faceid1: verifyData.faceId1,
                                             result: rx.isIdentical,
-                                            confidence: rx.confidence
+                                            confidence: rx.confidence,
+                                            faceUrl: faceUrl
                                         };
 
                                         // TODO: read data, then see

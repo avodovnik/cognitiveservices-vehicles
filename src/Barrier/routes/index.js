@@ -30,6 +30,7 @@ router.post('/send', function (req, res, next) {
         Lane: lane,
         IsVerified: req.body.result,
         Confidence: req.body.confidence,
+        faceUrl: req.body.faceUrl,
         Time: new Date(),
     };
 

@@ -64,8 +64,21 @@ header h1 {
     display: none;
 }
 
+.person {
+    width: 100px;
+    height: 100px;
+    overflow: hidden;
+    display: none;
+}
+
+.person img { width: 100%; }
+
 .go {
-    background: green;
+    background: #8bc34a;
+}
+
+.face {
+    background: #ffc1078a;
 }
 
 .stop {

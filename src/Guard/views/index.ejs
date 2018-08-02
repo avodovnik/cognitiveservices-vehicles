@@ -19,32 +19,44 @@
             <li class="lane lane-1" data-lane="1">
                 <h2>Lane 1</h2>
                 <div class="plate hidden "></div>
-                <div class="person"></div>
+                <div class="person">
+                    <img src="" />
+                </div>
             </li>
             <li class="lane lane-2" data-lane="2">
                 <h2>Lane 2</h2>
                 <div class="hidden plate"></div>
-                <div class="person"></div>
+                <div class="person">
+                    <img src="" />
+                </div>
             </li>
             <li class="lane lane-3" data-lane="3">
                 <h2>Lane 3</h2>
                 <div class="hidden plate"></div>
-                <div class="person"></div>
+                <div class="person">
+                    <img src="" />
+                </div>
             </li>
             <li class="lane lane-4" data-lane="4">
                 <h2>Lane 4</h2>
                 <div class="hidden plate"></div>
-                <div class="person"></div>
+                <div class="person">
+                    <img src="" />
+                </div>
             </li>
             <li class="lane lane-5" data-lane="5">
                 <h2>Lane 5</h2>
                 <div class="hidden plate"></div>
-                <div class="person"></div>
+                <div class="person">
+                    <img src="" />
+                </div>
             </li>
             <li class="lane lane-6" data-lane="6">
                 <h2>Lane 6</h2>
                 <div class="hidden plate"></div>
-                <div class="person"></div>
+                <div class="person">
+                    <img src="" />
+                </div>
             </li>
         </ul>
 
@@ -64,20 +76,35 @@
             function processRequest(lx) {
                 var el = $(".lane-" + lx.lane);
                 var plate = $(el.find('.plate'));
+                var personImg = $(el.find('.person>img'));
+                // $(this).find('.person>img').attr('src', 'https://fm.cnbc.com/applications/cnbc.com/resources/img/editorial/2018/01/12/104943858-Bill_Gates_speaks.1910x1000.jpg?v=1515782480');
 
                 if (lx.plate) {
                     plate.removeClass('hidden');
                 } else {
                     plate.addClass('hidden');
                 }
-                
+
+                if (lx.faceUrl) {
+                    personImg.attr('src', lx.faceUrl);
+                } else {
+                    personImg.attr('src', '');
+                }
+
+
                 if (lx.face && lx.plate) {
+                    el.removeClass('face');
                     el.addClass('go');
                 } else if (lx.face === false) {
+                    el.removeClass('face');
                     el.addClass('stop');
                 } else {
                     // assume nothing
                     el.removeClass('go').removeClass('stop');
+
+                    if(lx.face && !lx.plate) {
+                        el.addClass('face');
+                    }
                 }
             };
 
@@ -93,12 +120,15 @@
                         // console.log("Lane: " + msg.Lane);
 
                         var lx = getLane(msg.Lane);
+                        lx.faceUrl = msg.faceUrl;
 
                         if (msg.PlateContent) {
                             console.log("Plate number:" + msg.PlateContent);
                             lx.plate = msg.PlateContent;
                             updateLane(lx);
                         }
+
+                        console.log(lx.faceUrl);
 
                         if (msg.IsVerified) {
                             console.log("person check");
@@ -108,6 +138,8 @@
                         } else if (msg.IsVerified === false) {
                             lx.face = false;
                         }
+
+                        // console.log(msg.faceUrl);
                     }
                 });
 
@@ -126,7 +158,7 @@
                     $(this).find('.plate').html(lane.plate);
 
                     // update the face element, if we have that
-                    $(this).find('.person').html(lane.face);
+                    $(this).find('.person>img').attr('src', 'https://fm.cnbc.com/applications/cnbc.com/resources/img/editorial/2018/01/12/104943858-Bill_Gates_speaks.1910x1000.jpg?v=1515782480');
 
                     // verify if we have both elements, and if so, remove
                     // TODO: timer to clear the gate if only one item missing
