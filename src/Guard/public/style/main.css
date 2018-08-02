@@ -52,6 +52,18 @@ header h1 {
     padding-bottom: 10px;
 }
 
+.lane .plate { 
+    background: orange;
+    margin: 10px 140px;
+    display: block;
+    height: 2em;
+    line-height: 2em;
+}
+
+.lane .plate.hidden {
+    display: none;
+}
+
 .go {
     background: green;
 }

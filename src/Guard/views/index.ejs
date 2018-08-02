@@ -18,32 +18,32 @@
         <ul class="lane-list">
             <li class="lane lane-1" data-lane="1">
                 <h2>Lane 1</h2>
-                <div class="plate"></div>
+                <div class="plate hidden "></div>
                 <div class="person"></div>
             </li>
             <li class="lane lane-2" data-lane="2">
                 <h2>Lane 2</h2>
-                <div class="plate"></div>
+                <div class="hidden plate"></div>
                 <div class="person"></div>
             </li>
             <li class="lane lane-3" data-lane="3">
                 <h2>Lane 3</h2>
-                <div class="plate"></div>
+                <div class="hidden plate"></div>
                 <div class="person"></div>
             </li>
             <li class="lane lane-4" data-lane="4">
                 <h2>Lane 4</h2>
-                <div class="plate"></div>
+                <div class="hidden plate"></div>
                 <div class="person"></div>
             </li>
             <li class="lane lane-5" data-lane="5">
                 <h2>Lane 5</h2>
-                <div class="plate"></div>
+                <div class="hidden plate"></div>
                 <div class="person"></div>
             </li>
             <li class="lane lane-6" data-lane="6">
                 <h2>Lane 6</h2>
-                <div class="plate"></div>
+                <div class="hidden plate"></div>
                 <div class="person"></div>
             </li>
         </ul>
@@ -63,15 +63,22 @@
             //process recent requests to enter
             function processRequest(lx) {
                 var el = $(".lane-" + lx.lane);
+                var plate = $(el.find('.plate'));
 
+                if (lx.plate) {
+                    plate.removeClass('hidden');
+                } else {
+                    plate.addClass('hidden');
+                }
+                
                 if (lx.face && lx.plate) {
                     el.addClass('go');
-                } else if(lx.face === false) {
+                } else if (lx.face === false) {
                     el.addClass('stop');
                 } else {
                     // assume nothing
                     el.removeClass('go').removeClass('stop');
-                } 
+                }
             };
 
             function pollQueue() {
