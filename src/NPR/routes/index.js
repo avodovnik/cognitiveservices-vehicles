@@ -37,7 +37,11 @@ router.post("/upload", function (req, res) {
       console.log('Response: ', funcResult.PlateContent);
 
       // TODO: this is where we send the message to the storage queue
-
+    //   {
+    //     "Lane": 2,
+    //     "PlateContent": "V12LAF",
+    //     "RequestGuid": "165ea0ba-3544-4cd3-a0bd-44f13ed405cb"
+    // }
       return res.redirect("/?success=true");
     }
   });
