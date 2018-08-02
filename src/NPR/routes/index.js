@@ -44,14 +44,6 @@ router.post("/upload", function (req, res) {
       var funcResult = JSON.parse(response.body);
       console.log('Response: ', funcResult.PlateContent);
 
-<<<<<<< HEAD
-      // TODO: this is where we send the message to the storage queue
-    //   {
-    //     "Lane": 2,
-    //     "PlateContent": "V12LAF",
-    //     "RequestGuid": "165ea0ba-3544-4cd3-a0bd-44f13ed405cb"
-    // }
-=======
       //Send response content 
       var lane = funcResult.Lane; 
       var platecontent = funcResult.PlateContent;
@@ -70,7 +62,6 @@ router.post("/upload", function (req, res) {
           }
       });
 
->>>>>>> a6991d23c94331460498f16aac0ccb8eecd235f0
       return res.redirect("/?success=true");
     }
   });
