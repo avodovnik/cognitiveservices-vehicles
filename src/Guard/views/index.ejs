@@ -15,6 +15,39 @@
         <h1 id>Status:</h1>
         <h1 id="requestResult"></h1>
 
+        <ul class="lane-list">
+            <li class="lane lane-1" data-lane="1">
+                <h2>Lane 1</h2>
+                <div class="plate"></div>
+                <div class="person"></div>
+            </li>
+            <li class="lane lane-2" data-lane="2">
+                <h2>Lane 2</h2>
+                <div class="plate"></div>
+                <div class="person"></div>
+            </li>
+            <li class="lane lane-3" data-lane="3">
+                <h2>Lane 3</h2>
+                <div class="plate"></div>
+                <div class="person"></div>
+            </li>
+            <li class="lane lane-4" data-lane="4">
+                <h2>Lane 4</h2>
+                <div class="plate"></div>
+                <div class="person"></div>
+            </li>
+            <li class="lane lane-5" data-lane="5">
+                <h2>Lane 5</h2>
+                <div class="plate"></div>
+                <div class="person"></div>
+            </li>
+            <li class="lane lane-6" data-lane="6">
+                <h2>Lane 6</h2>
+                <div class="plate"></div>
+                <div class="person"></div>
+            </li>
+        </ul>
+
         <script type="text/javascript">
 
             //TODO: logic to define "allowed"
@@ -28,22 +61,18 @@
             var plateReceived = false;
 
             //process recent requests to enter
-            function processRequest() {
+            function processRequest(lx) {
+                var el = $(".lane-" + lx.lane);
 
-                //populate above variables from backend (app.js endpoints)
-
-                if (faceReceived === true && plateReceived === true) {
-                    document.getElementById("requestResult").textContent = "Allow"
-                    document.getElementById("requestResult").style.color = "green"
+                if (lx.face && lx.plate) {
+                    el.addClass('go');
+                } else if(lx.face === false) {
+                    el.addClass('stop');
                 } else {
-                    document.getElementById("requestResult").textContent = "Check vehicle in lane " + lane;
-                    document.getElementById("requestResult").style.color = "red"
-                }
-
+                    // assume nothing
+                    el.removeClass('go').removeClass('stop');
+                } 
             };
-
-            //refresh page every few seconds?
-            processRequest();
 
             function pollQueue() {
                 $.get('/poll', function (data) {
@@ -54,21 +83,69 @@
                     for (var i = 0; i < data.length; i++) {
                         var msg = data[i];
                         console.log(msg);
-                        console.log("Lane: " + msg.Lane);
-                        
-                        if(msg.PlateContent) {
-                            console.log("Plate number:" + msg.PlateContent);
-                            plateReceived = true;
+                        // console.log("Lane: " + msg.Lane);
 
-                            processRequest();
+                        var lx = getLane(msg.Lane);
+
+                        if (msg.PlateContent) {
+                            console.log("Plate number:" + msg.PlateContent);
+                            lx.plate = msg.PlateContent;
+                            updateLane(lx);
                         }
 
-                        if(msg.IsVerified) {
-                            faceReceived = true;
-                            processRequest();
+                        if (msg.IsVerified) {
+                            console.log("person check");
+
+                            lx.face = true;
+                            updateLane(lx);
+                        } else if (msg.IsVerified === false) {
+                            lx.face = false;
                         }
                     }
                 });
+
+                updateLaneList();
+            }
+
+            var lanes = [];
+
+            function updateLaneList() {
+                $('.lane').each(function (el) {
+                    // $(this).removeClass("go").removeClass("stop");
+
+                    var lane = getLane($(this).data('lane'));
+
+                    // update the plate element, if we have that
+                    $(this).find('.plate').html(lane.plate);
+
+                    // update the face element, if we have that
+                    $(this).find('.person').html(lane.face);
+
+                    // verify if we have both elements, and if so, remove
+                    // TODO: timer to clear the gate if only one item missing
+                    if (new Date() - lane.lastUpdate > 30 * 1000) {
+                        lane.plate = null,
+                            lane.face = null;
+                        updateLane(lane);
+                    }
+
+                    processRequest(lane);
+                });
+            }
+
+            function getLane(lane) {
+                if (!lanes[lane]) {
+                    var lx = { lane: lane, plate: undefined, face: undefined, lastUpdate: null };
+                    return updateLane(lx);
+                }
+
+                return lanes[lane];
+            }
+
+            function updateLane(lane) {
+                lane.lastUpdate = new Date();
+                lanes[lane.lane] = lane;
+                return lane;
             }
 
             var timer = window.setInterval(pollQueue, 1000);

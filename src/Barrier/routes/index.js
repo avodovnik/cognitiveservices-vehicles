@@ -42,8 +42,8 @@ router.post('/send', function (req, res, next) {
         console.log(error)
         if (!error) {
             console.log("success");
-            res.status(200);
             res.send('{ result: "done" }');
+            // res.end();
         } else {
             return res.redirect("/?success=false");
         }

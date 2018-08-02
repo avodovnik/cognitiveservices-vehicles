@@ -45,26 +45,27 @@ router.post("/upload", function (req, res) {
 			console.log('Response: ', funcResult.PlateContent);
 
 			//Send response content 
-			var lane = funcResult.Lane; 
+			var lane = funcResult.Lane;
 			var platecontent = funcResult.PlateContent;
-			
+
 			//create queue message
 			var message = {
-					Lane: lane,
-					PlateContent: platecontent,
-					Time: new Date(),
+				Lane: lane,
+				PlateContent: platecontent,
+				Time: new Date(),
 			};
 
 			queueSvc.createMessage(process.env.AZURE_STORAGE_QUEUE_NAME, JSON.stringify(message), function (error) {
-					console.log(error)
-					if (!error) {
-							console.log("success")
-					}
+				console.log(error)
+				if (!error) {
+					console.log("success")
+					return res.redirect("/?success=true");
+				} else {
 
 					return res.redirect("/?success=false");
+				}
 			});
 
-			return res.redirect("/?success=true");
 		}
 	});
 
