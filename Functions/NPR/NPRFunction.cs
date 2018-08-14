@@ -21,43 +21,78 @@ namespace NumPlateFunction
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
         {
 
+            try {
 
-
-            try
-            {
                 log.Info(Environment.GetEnvironmentVariable("NAME"));
                 log.Info("C# HTTP trigger function processed a request.");
 
-                ResponseInformation ri = new ResponseInformation();
-
-                //assign a guid to this request for tracking purposes
-                ri.RequestGuid = Guid.NewGuid();
+                //ResponseInformation object will compose a JSON response to return to the client.
+                ResponseInformation ri = new ResponseInformation
+                {
+                    /*
+                     * Immediately assign a guid to this request for tracking purposes 
+                     * (In case you'd like to store each entry attempt)
+                    */
+                    RequestGuid = Guid.NewGuid()
+                };
 
                 //key-value parameter pairs in req
                 IEnumerable<KeyValuePair<string, string>> parameters = req.GetQueryNameValuePairs();
 
-                //WARNING: Expecting lane num as first value passed in
-                var lane = parameters.First().Value;
-
-                ri.Lane = Convert.ToInt32(lane); //from input string
+                //WARNING: Expecting lane num as first value passed in from client (camera app)
+                //TODO: it would be nice to just find the value by key "lane" in the request
+                try
+                {
+                    var lane = parameters.First().Value;
+                    ri.Lane = Convert.ToInt32(lane); //pass it along
+                }
+                catch (Exception ex)
+                {
+                    //end here
+                    return req.CreateResponse(HttpStatusCode.BadRequest, ex.Message + " lane not provided or not as first param. Please provide the lane number.");
+                }
 
                 byte[] imagebytes = new byte[] { };
 
-                using (var streamReader = new MemoryStream())
+                try
                 {
-                    await req.Content.CopyToAsync(streamReader);
-                    imagebytes = streamReader.ToArray();
+                    //grab raw bytes of the image provided
+                    using (var streamReader = new MemoryStream())
+                    {
+                        await req.Content.CopyToAsync(streamReader);
+                        imagebytes = streamReader.ToArray();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //end here
+                    return req.CreateResponse(HttpStatusCode.BadRequest, ex.Message + " Image is not present or is not suitable. Please provide jpg image binary as body.");
+
                 }
 
-                //Write to result file somewhere to check topping
+                //Useful debug option: Write to result file somewhere to check cropping
                 //File.WriteAllBytes("C:/Users/me/myfiles/result.jpg", imagebytes);
 
-                var responseString = await DetectPlate(imagebytes);
+                //Detect the plate using Custom Vision
 
-                dynamic parsed = JObject.Parse(responseString);
+                var responseString = ""; //for raw API responses
+                dynamic parsed;
 
+                try
+                {
+                    responseString = await DetectPlate(imagebytes);
+                    parsed = JObject.Parse(responseString);
+                }
+                catch(Exception ex)
+                {
+                   //end here
+                   return req.CreateResponse(HttpStatusCode.InternalServerError, ex.Message + " Error detecting the number plate. Please check your input image and Custom Vision model.");
+                }
+
+                //use the prediction with the highest probability as scored by the model
                 var highestprob = 0.0;
 
+                //TODO: refactor to more efficiently find max value
                 JArray predictions = parsed.predictions;
 
                 foreach (var prediction in predictions)
@@ -96,25 +131,49 @@ namespace NumPlateFunction
                 var origWidth = imageobj.Width;
                 var origHeight = imageobj.Height;
 
-                //convert bounding values to int for cropper and scale
+                /*
+                 * Interestingly, The response from the Custom Vision detection endpoint is a 
+                 * set of values you multiply your original image dimensions by, for a relative bounding. 
+                */
+
+                //multiply out to get final cropping coordinates
                 int intleft = Convert.ToInt32(left * origWidth);
                 int inttop = Convert.ToInt32(top * origHeight);
                 int intwidth = Convert.ToInt32(width * origWidth);
                 int intheight = Convert.ToInt32(height * origHeight);
 
-                //image deduced from request req in cropping function
-                var croppedimagebytes = await Crop(req, intleft, inttop, intwidth, intheight);
+                dynamic croppedimagebytes;
+
+                try
+                {
+                    //image deduced from request req in cropping function
+                    croppedimagebytes = await Crop(req, intleft, inttop, intwidth, intheight);
+
+                }
+                catch (Exception ex)
+                {
+                    //end here
+                    return req.CreateResponse(HttpStatusCode.InternalServerError, ex.Message + " Error when cropping. Please check your input image and test your Custom Vision detection model.");
+                }
 
                 //OCR
                 //TODO: breaks when given image is too small (set min)/scale accordingly
-                responseString = await ReadPlate(croppedimagebytes);
 
-                //TODO: convert all JSON handling to take advantage of Response classes as below https://json2csharp.com
-                //beware incorrect variable types
+                try
+                {
+                    responseString = await ReadPlate(croppedimagebytes);
+                } catch (Exception ex)
+                {
+                    //end here
+                    return req.CreateResponse(HttpStatusCode.InternalServerError, ex.Message + " Error reading plate (OCR). Please ensure cropped image is between (40 x 40) and (3200 x 3200) pixels.");
+                }
+
+                //TODO: convert all JSON handling to take advantage of Response classes as below (where helpful) https://json2csharp.com
                 var parsedOCRresponse = JsonConvert.DeserializeObject<NumPlateVerifierFinal.OCRResponse>(responseString);
 
                 string ocrtext = ""; //concatenate all recognized text to this variable for return to ri
 
+                //TODO: remove nested for loops
                 foreach (var region in parsedOCRresponse.regions)
                 {
                     foreach (var line in region.lines)
@@ -131,19 +190,22 @@ namespace NumPlateFunction
                     }
                 }
 
-                //TODO: handle case that ocr returns something in plate's region box (excess characters returned)
+                //TODO: post processing - handle case that e.g. ocr returns something in plate's region box (excess characters returned)
                 ri.PlateContent = ocrtext;
 
-                return imagebytes == null
-                    ? req.CreateResponse(HttpStatusCode.BadRequest, "Please pass an array of bytes in your request body")
-                    : req.CreateResponse(HttpStatusCode.OK, ri);
+                //if we get here, everything is good!
+                return req.CreateResponse(HttpStatusCode.OK, ri);
+
+
             }
             catch (Exception ex)
             {
-
+                //in event of other unhandled error, provide details.
                 return req.CreateResponse(HttpStatusCode.InternalServerError, ex.Message);
             }
+
         }
+
 
         private static async Task<string> DetectPlate(byte[] bytes)
         {
@@ -228,7 +290,7 @@ namespace NumPlateFunction
 
     }
 
-    //constructing the response of the Azure Function
+    //constructing the JSON response of the Function
     public class ResponseInformation
     {
         //which lane is the car in question at?
@@ -239,6 +301,5 @@ namespace NumPlateFunction
 
         //Unique identifier for this particular sighting of the plate (in case we want to store examples for human verification/posterity)
         public Guid RequestGuid { get; set; }
-
     }
 }
